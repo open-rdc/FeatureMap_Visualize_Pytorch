@@ -78,8 +78,8 @@ visual3 = FM_visualize(model.cnn_layer, 4)   # Enter the model module and number
 
 img = Image.open(args.img_path)
 trans = transforms.ToTensor()
-img = trans(img).unsqueeze(0).cuda()
-model(img)
+img_cuda = trans(img).unsqueeze(0).cuda()
+model(img_cuda)
 
 activations1 = visual1.features
 feature1 = np.average(activations1[0],axis=0)
@@ -103,9 +103,22 @@ feature2m = np.multiply(feature3d, feature2)
 feature2z = np.pad(feature2m.repeat(2, axis=0).repeat(2, axis=1), (1,1), 'edge')
 feature2d = convolve(feature2z, filter3x3)
 feature1z = np.pad(feature1, (0,1), 'edge')
-feature = np.multiply(feature2d, feature1z)
+feature0 = np.multiply(feature2d, feature1z)
+filter8x8 = np.ones((8, 8))
+feature0z = feature0.repeat(4, axis=0).repeat(4, axis=1)
+feature = convolve(feature0z, filter8x8)
+
 feature = (feature - feature.min())/(feature.max() - feature.min())
-feature = np.log((feature * 0.9)+0.1)
+#feature = np.log10((feature * 0.9)+0.1)+1
 plt.imshow(feature)
 plt.savefig('feature.jpg')
+
+#feature_rgb = np.repeat(feature[:, :, np.newaxis], 3, axis=2)
+a = np.ones(feature.shape)
+feature_rgb = np.dstack((feature, feature, feature))
+img_extract = np.multiply(feature_rgb, img)
+
+img_extract = (img_extract - img_extract.min())/(img_extract.max() - img_extract.min())
+plt.imshow(img_extract)
+plt.savefig('extract_image.jpg')
 
